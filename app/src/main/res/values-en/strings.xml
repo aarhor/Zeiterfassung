@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Zeiterfassung</string>
+    <string name="LabelStartTime">Start Time:</string>
+    <string name="LabelEndTime">End Time:</string>
+    <string name="ButtonStart">Start</string>
+    <string name="ButtonEnd">Finish</string>
+</resources>
