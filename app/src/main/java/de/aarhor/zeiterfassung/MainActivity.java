@@ -1,7 +1,9 @@
 package de.aarhor.zeiterfassung;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.Room;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -10,7 +12,11 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+
+import de.aarhor.zeiterfassung.db.WorkTime;
+import de.aarhor.zeiterfassung.db.WorkTimeDatabase;
 
 public class MainActivity extends AppCompatActivity {
     private EditText _startDateTime;    //"textBox" Startzeit
@@ -20,6 +26,25 @@ public class MainActivity extends AppCompatActivity {
     private DateFormat _dateFormatter;
     private DateFormat _timeFormatter;
 
+    @SuppressLint("SimpleDateFormat")
+    public String getCurrentTimestamp(int Auswahl) {
+        String Datum = "";
+        switch (Auswahl) {
+            case 1:     // Komplettes Datum (Für die Anzeige)
+                Datum = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(Calendar
+                        .getInstance().getTime());
+                break;
+            case 2:     // Nur das Datum
+                Datum = new SimpleDateFormat("yyyy-MM-dd").format(Calendar
+                        .getInstance().getTime());
+                break;
+            case 3:     // Nur die aktuelle Uhrzeit
+                Datum = new SimpleDateFormat("HH:mm:ss").format(Calendar
+                        .getInstance().getTime());
+                break;
+        }
+        return Datum;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Initialisierung Datum / Uhrzeit Formatierung
         _dateFormatter = android.text.format.DateFormat.getDateFormat(this);
-        _timeFormatter= android.text.format.DateFormat.getTimeFormat(this);
+        _timeFormatter = android.text.format.DateFormat.getTimeFormat(this);
     }
 
     @Override
@@ -45,10 +70,6 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 String Meldung = "Die Start Zeit wurde eingetragen.";
 
-                // Logging
-                Log.d("MainActivity",   // Tag für Filterung
-                        Meldung); // Log-Nachricht
-
                 //Toast
                 Toast.makeText(MainActivity.this,   //Android Context
                                 Meldung,    //Toast-Nachricht aus der Variable "Meldung"
@@ -56,14 +77,21 @@ public class MainActivity extends AppCompatActivity {
                         .show();    //Toast anzeigen
 
                 //Datumsausgabe für UI
-                Calendar currentTime = Calendar.getInstance();
-                String currentTimeString=String.format(
-                        "%s %s",    //String für die Formatierung
-                        _dateFormatter.format(currentTime.getTime()),   //Datum formatieren
-                        _timeFormatter.format(currentTime.getTime())    //Zeit formatieren
-                );
+                _startDateTime.setText(getCurrentTimestamp(1));
 
-                _startDateTime.setText(currentTimeString);
+                //In Datenbank speichern
+                final TimeTrackingApp app = (TimeTrackingApp) getApplication();
+
+                app.getExecutors().diskIO().execute(() -> {
+                    WorkTime workTime = new WorkTime();
+                    workTime.startTime = getCurrentTimestamp(1);
+                    app.getDb().workTimeDato().add(workTime);
+                });
+                WorkTimeDatabase db = Room.databaseBuilder(
+                        MainActivity.this,  // Android Context
+                        WorkTimeDatabase.class,    // Datentyp der Datenbank
+                        "worktime_data.db"         // Name der Datenbank
+                ).build();
             }
         });
 
@@ -72,10 +100,6 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 String Meldung = "Die End Zeit wurde eingetragen.";
 
-                // Logging
-                Log.d("MainActivity",   // Tag für Filterung
-                        Meldung); // Log-Nachricht
-
                 //Toast
                 Toast.makeText(MainActivity.this,   //Android Context
                                 Meldung,    //Toast-Nachricht aus der Variable "Meldung"
@@ -83,17 +107,9 @@ public class MainActivity extends AppCompatActivity {
                         .show();    //Toast anzeigen
 
                 //Datumsausgabe für UI
-                Calendar currentTime = Calendar.getInstance();
-                String currentTimeString=String.format(
-                        "%s %s",    //String für die Formatierung
-                        _dateFormatter.format(currentTime.getTime()),   //Datum formatieren
-                        _timeFormatter.format(currentTime.getTime())    //Zeit formatieren
-                );
-
-                _endDateTime.setText(currentTimeString);
+                _endDateTime.setText(getCurrentTimestamp(1));
             }
         });
-
     }
 
     @Override
