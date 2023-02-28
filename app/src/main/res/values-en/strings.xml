@@ -5,4 +5,5 @@
     <string name="LabelEndTime">End Time:</string>
     <string name="ButtonStart">Start</string>
     <string name="ButtonEnd">Finish</string>
+    <string name="NoEmptyStartTime">NO EMPTY START VALUE FOUND!</string>
 </resources>

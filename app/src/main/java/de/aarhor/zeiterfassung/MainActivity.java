@@ -47,6 +47,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        initFromDb();
+    }
+
+    private void initFromDb() {
+        final TimeTrackingApp app = (TimeTrackingApp) getApplication();
+
+        // Deaktivieren der beiden Buttons
+        _startCommand.setEnabled(false);
+        _endCommand.setEnabled(false);
+
+        // Laden eines offenes Datensatzes
+        app.getExecutors().diskIO().execute(() -> {
+            WorkTime openWorkTime = app.getDb().workTimeDato().getOpened();
+            if (openWorkTime == null) {
+                // Keine offenen Datensätze
+                app.getExecutors().mainThread().execute(() -> {
+                    _startDateTime.setText("");
+                    _endDateTime.setText("");
+                    _startCommand.setEnabled(true);
+                });
+            } else {
+                // Offener Datensatz
+                app.getExecutors().mainThread().execute(() -> {
+                    _startDateTime.setText(openWorkTime.startTime);
+                    _endDateTime.setText("");
+                    _endCommand.setEnabled(true);
+                });
+            }
+        });
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -65,50 +99,60 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        _startCommand.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String Meldung = "Die Start Zeit wurde eingetragen.";
+        _startCommand.setOnClickListener(view -> {
+            String Meldung = "Die Start Zeit wurde eingetragen.";
 
-                //Toast
-                Toast.makeText(MainActivity.this,   //Android Context
-                                Meldung,    //Toast-Nachricht aus der Variable "Meldung"
-                                Toast.LENGTH_LONG)  //Toast Länge
-                        .show();    //Toast anzeigen
+            //Toast
+            Toast.makeText(MainActivity.this,   //Android Context
+                            Meldung,    //Toast-Nachricht aus der Variable "Meldung"
+                            Toast.LENGTH_LONG)  //Toast Länge
+                    .show();    //Toast anzeigen
 
-                //Datumsausgabe für UI
-                _startDateTime.setText(getCurrentTimestamp(1));
+            //In Datenbank speichern
+            final TimeTrackingApp app = (TimeTrackingApp) getApplication();
 
-                //In Datenbank speichern
-                final TimeTrackingApp app = (TimeTrackingApp) getApplication();
+            app.getExecutors().diskIO().execute(() -> {
+                WorkTime workTime = new WorkTime();
+                workTime.startTime = getCurrentTimestamp(1);
+                app.getDb().workTimeDato().add(workTime);
+            });
+            WorkTimeDatabase db = Room.databaseBuilder(
+                    MainActivity.this,  // Android Context
+                    WorkTimeDatabase.class,    // Datentyp der Datenbank
+                    "worktime_data.db"         // Name der Datenbank
+            ).build();
 
-                app.getExecutors().diskIO().execute(() -> {
-                    WorkTime workTime = new WorkTime();
-                    workTime.startTime = getCurrentTimestamp(1);
-                    app.getDb().workTimeDato().add(workTime);
-                });
-                WorkTimeDatabase db = Room.databaseBuilder(
-                        MainActivity.this,  // Android Context
-                        WorkTimeDatabase.class,    // Datentyp der Datenbank
-                        "worktime_data.db"         // Name der Datenbank
-                ).build();
-            }
+            //Datumsausgabe für UI
+            _startDateTime.setText(getCurrentTimestamp(1));
         });
 
-        _endCommand.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String Meldung = "Die End Zeit wurde eingetragen.";
+        _endCommand.setOnClickListener(view -> {
+            //In Datenbank speichern
+            final TimeTrackingApp app = (TimeTrackingApp) getApplication();
+            String CurrentTime = getCurrentTimestamp(1);
 
-                //Toast
-                Toast.makeText(MainActivity.this,   //Android Context
-                                Meldung,    //Toast-Nachricht aus der Variable "Meldung"
-                                Toast.LENGTH_LONG)  //Toast Länge
-                        .show();    //Toast anzeigen
+            app.getExecutors().diskIO().execute(() -> {
+                        WorkTime startedWorkTime = app.getDb().workTimeDato().getOpened();
+                        if (startedWorkTime == null) {
+                            // Keinen Datensatz mit fehlendem Ende gefunden
+                            app.getExecutors().mainThread()
+                                    .execute(() -> _endDateTime.setText(R.string.NoEmptyStartTime));
+                        } else {
+                            startedWorkTime.endTime = CurrentTime;
+                            app.getDb().workTimeDato().update(startedWorkTime);
+                            app.getExecutors().mainThread()
+                                    .execute(() -> _endDateTime.setText(CurrentTime));
+                        }
+                    }
+            );
 
-                //Datumsausgabe für UI
-                _endDateTime.setText(getCurrentTimestamp(1));
-            }
+            String Meldung = "Die End Zeit wurde eingetragen.";
+
+            //Toast
+            Toast.makeText(MainActivity.this,   //Android Context
+                            Meldung,    //Toast-Nachricht aus der Variable "Meldung"
+                            Toast.LENGTH_LONG)  //Toast Länge
+                    .show();    //Toast anzeigen
         });
     }
 
