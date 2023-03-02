@@ -19,10 +19,10 @@ import de.aarhor.zeiterfassung.db.WorkTime;
 import de.aarhor.zeiterfassung.db.WorkTimeDatabase;
 
 public class MainActivity extends AppCompatActivity {
-    private EditText _startDateTime;    //"textBox" Startzeit
-    private EditText _endDateTime;      //"textBox" Endzeit
-    private Button _startCommand;       //Button Start
-    private Button _endCommand;         //Button Ende
+    private EditText _startDateTime;    // "textBox" Startzeit
+    private EditText _endDateTime;      // "textBox" Endzeit
+    private Button _startCommand;       // Button Start
+    private Button _endCommand;         // Button Ende
     private DateFormat _dateFormatter;
     private DateFormat _timeFormatter;
 

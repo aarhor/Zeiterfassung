@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Zeiterfassung</string>
-    <string name="LabelStartTime">Startzeit:</string>
-    <string name="LabelEndTime">Endzeit:</string>
-    <string name="ButtonStart">Starten</string>
-    <string name="ButtonEnd">Beenden</string>
-    <string name="NoEmptyStartTime">KEIN OFFENER DATENSATZ GEFUNDEN!</string>
+    <string name="app_name">Time Tracking</string>
+    <string name="LabelStartTime">Start Time:</string>
+    <string name="LabelEndTime">End Time:</string>
+    <string name="ButtonStart">Start</string>
+    <string name="ButtonEnd">Finish</string>
+    <string name="NoEmptyStartTime">NO EMPTY START VALUE FOUND!</string>
 </resources>
