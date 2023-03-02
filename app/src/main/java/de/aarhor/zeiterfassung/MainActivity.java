@@ -1,9 +1,11 @@
 package de.aarhor.zeiterfassung;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.Room;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,6 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 import de.aarhor.zeiterfassung.db.WorkTime;
+import de.aarhor.zeiterfassung.db.WorkTimeDatabase;
 
 public class MainActivity extends AppCompatActivity {
     private EditText _startDateTime;    //"textBox" Startzeit
@@ -23,76 +26,34 @@ public class MainActivity extends AppCompatActivity {
     private DateFormat _dateFormatter;
     private DateFormat _timeFormatter;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        // "Suchen" der UI Elemente
-        _startDateTime = findViewById(R.id.edtText_StartTime);
-        _endDateTime = findViewById(R.id.edtText_EndTime);
-        _startCommand = findViewById(R.id.btn_StartCommand);
-        _endCommand = findViewById(R.id.btn_EndCommand);
-
-        // Deaktivieren der Tastatureingaben
-        _startDateTime.setKeyListener(null);
-        _endDateTime.setKeyListener(null);
-
-        // Initialisierung Datum / Uhrzeit Formatierung
-        _dateFormatter = android.text.format.DateFormat.getDateFormat(this);
-        _timeFormatter = android.text.format.DateFormat.getTimeFormat(this);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        initFromDb();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        // Listener registrieren
-        _startCommand.setOnClickListener(onStartClicked());
-        _endCommand.setOnClickListener(onEndClicked());
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        // Listener deregistrieren
-        _startCommand.setOnClickListener(null);
-        _endCommand.setOnClickListener(null);
+    @SuppressLint("SimpleDateFormat")
+    public String getCurrentTimestamp(int Auswahl) {
+        String Datum = "";
+        switch (Auswahl) {
+            case 1:     // Komplettes Datum (Für die Anzeige)
+                Datum = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(Calendar
+                        .getInstance().getTime());
+                break;
+            case 2:     // Nur das Datum
+                Datum = new SimpleDateFormat("yyyy-MM-dd").format(Calendar
+                        .getInstance().getTime());
+                break;
+            case 3:     // Nur die aktuelle Uhrzeit
+                Datum = new SimpleDateFormat("HH:mm:ss").format(Calendar
+                        .getInstance().getTime());
+                break;
+        }
+        return Datum;
     }
 
     private TimeTrackingApp getApp() {
         return (TimeTrackingApp) getApplication();
     }
 
-    private void setStartTimeforUI(String startTime) {
-        getApp().getExecutors().mainThread().execute(() -> {
-            _startCommand.setEnabled(false);
-            _startDateTime.setText(startTime);
-            _endCommand.setEnabled(true);
-        });
-    }
-
-    private void setEndTimeforUI(String endTime) {
-        getApp().getExecutors().mainThread().execute(() -> {
-            _endCommand.setEnabled(false);
-            _endDateTime.setText(endTime);
-            _startCommand.setEnabled(true);
-        });
-    }
-
-    private void resetStartEnd() {
-        getApp().getExecutors().mainThread().execute(() -> {
-            _startDateTime.setText("");
-            _endDateTime.setText("");
-            _startCommand.setEnabled(true);
-        });
+    @Override
+    protected void onStart() {
+        super.onStart();
+        initFromDb();
     }
 
     private void initFromDb() {
@@ -102,62 +63,112 @@ public class MainActivity extends AppCompatActivity {
 
         // Laden eines offenes Datensatzes
         getApp().getExecutors().diskIO().execute(() -> {
-            WorkTime openWorkTile = getApp().getDb().workTimeDato().getOpened();
-            if (openWorkTile == null) {
+            WorkTime openWorkTime = getApp().getDb().workTimeDato().getOpened();
+            if (openWorkTime == null) {
                 // Keine offenen Datensätze
-                resetStartEnd();
+                getApp().getExecutors().mainThread().execute(() -> {
+                    _startDateTime.setText("");
+                    _endDateTime.setText("");
+                    _startCommand.setEnabled(true);
+                });
             } else {
                 // Offener Datensatz
-                setStartTimeforUI(formatforUI(openWorkTile.startTime));
+                getApp().getExecutors().mainThread().execute(() -> {
+                    _startDateTime.setText(openWorkTime.startTime);
+                    _endDateTime.setText("");
+                    _endCommand.setEnabled(true);
+                });
             }
         });
     }
 
-    private View.OnClickListener onStartClicked() {
-        return v -> {
-            _startCommand.setEnabled(false);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-            // In Datenbank speichern
-            getApp().getExecutors().diskIO().execute(() -> {
-                WorkTime workTime = new WorkTime();
-                getApp().getDb().workTimeDato().add(workTime);
+        _startDateTime = findViewById(R.id.edtText_StartTime);
+        _endDateTime = findViewById(R.id.edtText_EndTime);
+        _startCommand = findViewById(R.id.btn_StartCommand);
+        _endCommand = findViewById(R.id.btn_EndCommand);
 
-                setStartTimeforUI(formatforUI(workTime.startTime));
-            });
-        };
+        //Initialisierung Datum / Uhrzeit Formatierung
+        _dateFormatter = android.text.format.DateFormat.getDateFormat(this);
+        _timeFormatter = android.text.format.DateFormat.getTimeFormat(this);
     }
 
-    private View.OnClickListener onEndClicked() {
-        return v -> {
-            _endCommand.setEnabled(false);
+    @Override
+    protected void onResume() {
+        super.onResume();
 
-            getApp().getExecutors().diskIO().execute(() -> {
-                WorkTime startedWorkTime = getApp().getDb().workTimeDato().getOpened();
-                if (startedWorkTime == null) {
-                    // Kein Datensatz mit offenen Enden gefunden
-                    resetStartEnd();
-                } else {
-                    Calendar currentTime=Calendar.getInstance();
-                    startedWorkTime.endTime = currentTime;
-                    getApp().getDb().workTimeDato().update(startedWorkTime);
-                }
-            });
-
-            String Meldung = "Die End Zeit wurde eingetragen.";
+        _startCommand.setOnClickListener(view -> {
+            String Meldung = "Die Start Zeit wurde eingetragen.";
 
             //Toast
-            Toast.makeText(MainActivity.this,    // Android Context
-                            Meldung,                    // Toast-Nachricht aus der Variable "Meldung"
-                            Toast.LENGTH_LONG)          // Toast Länge
-                    .show();                            // Toast anzeigen
-        };
+            Toast.makeText(MainActivity.this,   //Android Context
+                            Meldung,    //Toast-Nachricht aus der Variable "Meldung"
+                            Toast.LENGTH_LONG)  //Toast Länge
+                    .show();    //Toast anzeigen
+
+            //In Datenbank speichern
+            getApp().getExecutors().diskIO().execute(() -> {
+                WorkTime workTime = new WorkTime();
+                workTime.startTime = getCurrentTimestamp(1);
+                getApp().getDb().workTimeDato().add(workTime);
+            });
+            WorkTimeDatabase db = Room.databaseBuilder(
+                    MainActivity.this,  // Android Context
+                    WorkTimeDatabase.class,    // Datentyp der Datenbank
+                    "worktime_data.db"         // Name der Datenbank
+            ).build();
+
+            //Datumsausgabe für UI
+            _startDateTime.setText(getCurrentTimestamp(1));
+
+            // Buttons umschalten
+            _startCommand.setEnabled(false);
+            _endCommand.setEnabled(true);
+        });
+
+        _endCommand.setOnClickListener(view -> {
+            String Meldung = "Die End Zeit wurde eingetragen.";
+
+            //In Datenbank speichern
+            String CurrentTime = getCurrentTimestamp(1);
+
+            getApp().getExecutors().diskIO().execute(() -> {
+                        WorkTime startedWorkTime = getApp().getDb().workTimeDato().getOpened();
+                        if (startedWorkTime == null) {
+                            // Keinen Datensatz mit fehlendem Ende gefunden
+                            getApp().getExecutors().mainThread()
+                                    .execute(() -> _endDateTime.setText(R.string.NoEmptyStartTime));
+                        } else {
+                            startedWorkTime.endTime = CurrentTime;
+                            getApp().getDb().workTimeDato().update(startedWorkTime);
+                            getApp().getExecutors().mainThread()
+                                    .execute(() -> _endDateTime.setText(CurrentTime));
+                        }
+                    }
+            );
+
+            // Buttons umschalten
+            _startCommand.setEnabled(true);
+            _endCommand.setEnabled(false);
+
+            // Toast
+            Toast.makeText(MainActivity.this,   //Android Context
+                            Meldung,    //Toast-Nachricht aus der Variable "Meldung"
+                            Toast.LENGTH_LONG)  //Toast Länge
+                    .show();    //Toast anzeigen
+        });
     }
 
-    private String formatforUI(Calendar currentTime) {
-        return String.format(
-                "%s %s",        // String Format
-                _dateFormatter.format(currentTime.getTime()),
-                _timeFormatter.format(currentTime.getTime())
-        );
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        //Listener deregistrieren
+        _startCommand.setOnClickListener(null);
+        _endCommand.setOnClickListener(null);
     }
 }
