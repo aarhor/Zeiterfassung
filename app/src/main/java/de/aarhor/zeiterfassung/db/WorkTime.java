@@ -16,11 +16,11 @@ public class WorkTime {
 
     @NonNull
     @ColumnInfo(name = "start_time")
-    public Calendar startTime = Calendar.getInstance();
+    public String startTime;
 
     @Nullable
     @ColumnInfo(name = "end_time")
-    public Calendar endTime;
+    public String endTime;
 
     public WorkTime() {
         startTime = null;
