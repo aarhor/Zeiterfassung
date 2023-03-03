@@ -1,11 +1,14 @@
 package de.aarhor.zeiterfassung;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.room.Room;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -101,7 +104,30 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        _startCommand.setOnClickListener(view -> {
+        _startCommand.setOnClickListener(onStartClick());
+
+        _endCommand.setOnClickListener(onEndClick());
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        //Listener deregistrieren
+        _startCommand.setOnClickListener(null);
+        _endCommand.setOnClickListener(null);
+    }
+
+    private String formatForUI(Calendar currentTime) {
+        return String.format(
+                "%s %s", // String für Formatierung
+                _dateFormatter.format(currentTime.getTime()), // Datum formatiert
+                _timeFormatter.format(currentTime.getTime()) // Zeit formatiert
+        );
+    }
+
+    private View.OnClickListener onStartClick() {
+        return v -> {
             String Meldung = "Die Start Zeit wurde eingetragen.";
 
             //Toast
@@ -128,9 +154,11 @@ public class MainActivity extends AppCompatActivity {
             // Buttons umschalten
             _startCommand.setEnabled(false);
             _endCommand.setEnabled(true);
-        });
+        };
+    }
 
-        _endCommand.setOnClickListener(view -> {
+    private View.OnClickListener onEndClick() {
+        return v -> {
             String Meldung = "Die End Zeit wurde eingetragen.";
 
             //In Datenbank speichern
@@ -160,15 +188,27 @@ public class MainActivity extends AppCompatActivity {
                             Meldung,    //Toast-Nachricht aus der Variable "Meldung"
                             Toast.LENGTH_LONG)  //Toast Länge
                     .show();    //Toast anzeigen
-        });
+        };
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.MenuItemListData:
+                // Expliziter Intent
+                Intent listDataIntent = new Intent(
+                        this,
+                        ListDataActivity.class);
+                startActivity(listDataIntent);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
 
-        //Listener deregistrieren
-        _startCommand.setOnClickListener(null);
-        _endCommand.setOnClickListener(null);
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main_activity, menu);
+        return super.onCreateOptionsMenu(menu);
     }
 }

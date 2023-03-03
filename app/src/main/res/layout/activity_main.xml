@@ -6,10 +6,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:paddingBottom="@dimen/ActivityVPadding"
-    android:paddingEnd="@dimen/ActivityHPadding"
     android:paddingStart="@dimen/ActivityHPadding"
     android:paddingTop="@dimen/ActivityVPadding"
+    android:paddingEnd="@dimen/ActivityHPadding"
+    android:paddingBottom="@dimen/ActivityVPadding"
     tools:context=".MainActivity">
 
     <TextView
