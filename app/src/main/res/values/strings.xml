@@ -6,4 +6,5 @@
     <string name="ButtonEnd">Finish</string>
     <string name="NoEmptyStartTime">NO EMPTY START VALUE FOUND!</string>
     <string name="MenuItemListData">List all Values</string>
+    <string name="LabelComment">Comment:</string>
 </resources>

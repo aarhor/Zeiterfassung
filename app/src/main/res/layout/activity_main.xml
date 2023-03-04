@@ -40,6 +40,20 @@
         android:ems="10"
         android:inputType="date" />
 
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/LabelComment"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
+    <EditText
+        android:id="@+id/edtText_Comment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="text" />
+
     <Button
         android:id="@+id/btn_StartCommand"
         android:layout_width="match_parent"

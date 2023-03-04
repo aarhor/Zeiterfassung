@@ -6,4 +6,5 @@
     <string name="ButtonEnd">Beenden</string>
     <string name="NoEmptyStartTime">KEIN OFFENER DATENSATZ GEFUNDEN!</string>
     <string name="MenuItemListData">Alle Zeiten anzeigen</string>
+    <string name="LabelComment">Bemerkung:</string>
 </resources>

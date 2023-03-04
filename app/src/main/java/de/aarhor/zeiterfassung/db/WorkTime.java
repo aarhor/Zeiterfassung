@@ -10,19 +10,36 @@ import java.util.Calendar;
 
 @Entity(tableName = "time_data")
 public class WorkTime {
+    /*
+    CREATE TABLE Zeiten (_id INTEGER PRIMARY KEY, Datum DATE, Start DATETIME, Ende DATETIME, Differenz DOUBLE, MehrMinder_Stunden DOUBLE, Bemerkung TEXT
+default NULL);
+     */
+
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "_id")
     public int id;
 
     @NonNull
-    @ColumnInfo(name = "start_time")
+    @ColumnInfo(name = "Datum")
+    public String Datum;
+
+    @NonNull
+    @ColumnInfo(name = "Start")
     public String startTime;
 
     @Nullable
-    @ColumnInfo(name = "end_time")
+    @ColumnInfo(name = "Ende")
     public String endTime;
 
-    public WorkTime() {
-        startTime = null;
-    }
+    @Nullable
+    @ColumnInfo(name = "Differenz")
+    public Double Differenz;
+
+    @Nullable
+    @ColumnInfo(name = "MehrMinder_Stunden")
+    public Double MehrMinder_Stunden;
+
+    @Nullable
+    @ColumnInfo(name = "comment")
+    public String Bemerkung;
 }

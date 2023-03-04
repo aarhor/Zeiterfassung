@@ -19,7 +19,7 @@ public interface WorkTimeDao {
     void add(WorkTime workTime);
 
     @Query("select * from time_data " +
-            "where IFNULL(end_time, '') = '' " +
+            "where IFNULL(Ende, '') = '' " +
             "order by _id DESC")
     WorkTime getOpened();
 
