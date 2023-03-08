@@ -7,4 +7,6 @@
     <string name="NoEmptyStartTime">NO EMPTY START VALUE FOUND!</string>
     <string name="MenuItemListData">List all Values</string>
     <string name="LabelComment">Comment:</string>
+    <string name="checkBoxPause">Break</string>
+    <string name="ButtonSelectDB">Select Database</string>
 </resources>

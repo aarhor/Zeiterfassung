@@ -1,21 +1,25 @@
 package de.aarhor.zeiterfassung;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.room.Room;
-
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.provider.MediaStore;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import java.text.DateFormat;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.Room;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -30,10 +34,39 @@ public class MainActivity extends AppCompatActivity {
     private EditText _Comment;          // "textBox" Bemerkung
     private Button _startCommand;       // Button Start
     private Button _endCommand;         // Button Ende
-    private DateFormat _dateFormatter;
-    private DateFormat _timeFormatter;
-    private double Arbeitszeit;
-    private double MehrMinder_Stunden;
+    private Button _selectDB;           // Button Datenbank auswählen
+    private CheckBox _chckBoxPause;     // Checkbox Pause
+    Zeitenrechner get_Zeiten = new Zeitenrechner();
+    DatumKonverter Konverter = new DatumKonverter();
+    Uri mDbUri = null;
+
+    private static final int PICK_DB_FILE_REQUEST_CODE = 1;
+    private static final String[] DB_MIME_TYPES = {"application/x-sqlite3", "application/octet-stream"};
+
+    public void openDatabase(View view) {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, DB_MIME_TYPES);
+        startActivityForResult(intent, PICK_DB_FILE_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICK_DB_FILE_REQUEST_CODE && resultCode == RESULT_OK) {
+            if (data != null) {
+                mDbUri = data.getData();
+
+                //Toast
+                Toast.makeText(MainActivity.this,   //Android Context
+                                mDbUri.getPath(),    //Toast-Nachricht aus der Variable "Meldung"
+                                Toast.LENGTH_LONG)  //Toast Länge
+                        .show();    //Toast anzeigen
+            }
+        }
+    }
 
     @SuppressLint("SimpleDateFormat")
     public String getCurrentTimestamp(int Auswahl) {
@@ -79,30 +112,40 @@ public class MainActivity extends AppCompatActivity {
                 getApp().getExecutors().mainThread().execute(() -> {
                     _startDateTime.setText("");
                     _endDateTime.setText("");
+                    _Comment.setText("");
                     _startCommand.setEnabled(true);
                     _Comment.setEnabled(false);
                     _Comment.setText("");
                 });
             } else {
-                DatumKonverter Konverter = new DatumKonverter();
-                String Deutsches_Datum = "";
-
+                String finalesDeutschesDatum;
                 try {
-                    Deutsches_Datum = Konverter.englisch_deutsch_Datum(openWorkTime.Datum);
+                    finalesDeutschesDatum = Konverter.englisch_deutsch_Datum(openWorkTime.Datum);
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
 
                 // Offener Datensatz
-                String finalDeutsches_Datum = Deutsches_Datum;
                 getApp().getExecutors().mainThread().execute(() -> {
-                    _startDateTime.setText(finalDeutsches_Datum + " " + openWorkTime.startTime);
+                    _startDateTime.setText(finalesDeutschesDatum + " " + openWorkTime.startTime);
                     _endDateTime.setText("");
                     _endCommand.setEnabled(true);
                     _Comment.setEnabled(true);
                 });
             }
         });
+
+        String HeutigerTag = Konverter.get_DayofWeekGerman(getCurrentTimestamp(2));
+        if (HeutigerTag.equalsIgnoreCase("Montag") ||
+                HeutigerTag.equalsIgnoreCase("Dienstag") ||
+                HeutigerTag.equalsIgnoreCase("Mittwoch") ||
+                HeutigerTag.equalsIgnoreCase("Donnerstag")) {
+            _chckBoxPause.setChecked(true);
+        } else if (HeutigerTag.equalsIgnoreCase("Freitag") ||
+                HeutigerTag.equalsIgnoreCase("Samstag") ||
+                HeutigerTag.equalsIgnoreCase("Sonntag")) {
+            _chckBoxPause.setChecked(false);
+        }
     }
 
     @Override
@@ -115,10 +158,11 @@ public class MainActivity extends AppCompatActivity {
         _startCommand = findViewById(R.id.btn_StartCommand);
         _endCommand = findViewById(R.id.btn_EndCommand);
         _Comment = findViewById(R.id.edtText_Comment);
+        _chckBoxPause = findViewById(R.id.chkBox_Pause);
+        _selectDB = findViewById(R.id.btn_select_db);
 
-        //Initialisierung Datum / Uhrzeit Formatierung
-        _dateFormatter = android.text.format.DateFormat.getDateFormat(this);
-        _timeFormatter = android.text.format.DateFormat.getTimeFormat(this);
+        _startDateTime.setEnabled(false);
+        _endDateTime.setEnabled(false);
     }
 
     @Override
@@ -136,14 +180,6 @@ public class MainActivity extends AppCompatActivity {
         //Listener deregistrieren
         _startCommand.setOnClickListener(null);
         _endCommand.setOnClickListener(null);
-    }
-
-    private String formatForUI(Calendar currentTime) {
-        return String.format(
-                "%s %s", // String für Formatierung
-                _dateFormatter.format(currentTime.getTime()), // Datum formatiert
-                _timeFormatter.format(currentTime.getTime()) // Zeit formatiert
-        );
     }
 
     private View.OnClickListener onStartClick() {
@@ -170,6 +206,8 @@ public class MainActivity extends AppCompatActivity {
             _startCommand.setEnabled(false);
             _endCommand.setEnabled(true);
             _Comment.setEnabled(true);
+            _Comment.setText(null);
+            _endDateTime.setText(null);
 
             //Toast
             Toast.makeText(MainActivity.this,   //Android Context
@@ -197,25 +235,25 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             startedWorkTime.endTime = CurrentTime;
 
-                            if (_Comment.getText() == null)
+                            if (_Comment.getText().toString().trim().length() == 0) {
                                 startedWorkTime.Bemerkung = null;
-                            else
+                            } else
                                 startedWorkTime.Bemerkung = _Comment.getText().toString();
 
                             try {
-                                Differenz[0] = (get_Differenz(startedWorkTime.startTime, startedWorkTime.endTime));
-                                // Differenz[0] = (get_Differenz("08:00:00", "16:30:00"));
+                                double value = (get_Zeiten.get_Differenz(startedWorkTime.startTime, startedWorkTime.endTime));
+                                Differenz[0] = Math.round(100.0 * value) / 100.0;
                             } catch (ParseException e) {
                                 throw new RuntimeException(e);
                             }
                             startedWorkTime.Differenz = Differenz[0];
 
+                            boolean Pause = _chckBoxPause.isChecked();
+                            startedWorkTime.MehrMinder_Stunden = get_Zeiten.get_MehrMinderStunden(startedWorkTime.Datum, Differenz[0], Pause);
+
                             getApp().getDb().workTimeDato().update(startedWorkTime);
                             getApp().getExecutors().mainThread()
-                                    .execute(() -> {
-                                        _endDateTime.setText(getCurrentTimestamp(1));
-                                        _Comment.setText(Differenz[0].toString());
-                                    });
+                                    .execute(() -> _endDateTime.setText(getCurrentTimestamp(1)));
                         }
                     }
             );
@@ -233,40 +271,7 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
-    public Double get_Differenz(String startZeit, String endZeit) throws ParseException {
-        // Erstellen Sie ein SimpleDateFormat-Objekt, um das Format der Uhrzeit zu definieren
-        @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-
-        // Erstellen Sie zwei Calendar-Objekte und setzen Sie sie auf die gewünschten Uhrzeiten
-        Calendar calendar1 = Calendar.getInstance();
-        calendar1.setTime(Objects.requireNonNull(sdf.parse(startZeit)));
-        Calendar calendar2 = Calendar.getInstance();
-        calendar2.setTime(Objects.requireNonNull(sdf.parse(endZeit)));
-
-        // Berechnen Sie die Differenz zwischen den beiden Uhrzeiten in Millisekunden
-        double diffMillis = (double) (calendar2.getTimeInMillis() - calendar1.getTimeInMillis());
-
-        // Konvertieren Sie die Differenz in Stunden, Minuten und Sekunden
-        double diffSeconds = diffMillis / 1000;
-        double diffMinutes = diffSeconds / 60;
-        double diffHours = Math.floor(diffMinutes / 60);
-        diffMinutes %= 60;
-
-        double diffMinutes_decimal = (double) (diffMinutes / 60);
-        double result = (double) (diffHours + diffMinutes_decimal);
-
-        // Geben Sie die Differenz aus
-        Log.d("Uhrzeit-Differenz", "Differenz Minuten : " + diffMinutes_decimal);
-        Log.d("Uhrzeit-Differenz", "Differenz Stunden : " + diffHours);
-        Log.d("Uhrzeit-Differenz", "Differenz Gesamt  : " + result);
-
-        return result;
-    }
-
-    public Double get_MehrMinderStunden() {
-        return 0.0;
-    }
-
+    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {

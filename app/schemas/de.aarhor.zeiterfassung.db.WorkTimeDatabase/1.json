@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "c79156d5770b17f388c8da59ff481d6a",
+    "identityHash": "de0c4205be13613aac62ae0346991d6b",
     "entities": [
       {
         "tableName": "time_data",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `Datum` TEXT NOT NULL, `Start` TEXT NOT NULL, `Ende` TEXT, `Differenz` REAL, `MehrMinder_Stunden` REAL, `comment` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `Datum` TEXT NOT NULL, `Start` TEXT NOT NULL, `Ende` TEXT, `Differenz` REAL, `MehrMinder_Stunden` REAL, `Bemerkung` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -46,7 +46,7 @@
           },
           {
             "fieldPath": "Bemerkung",
-            "columnName": "comment",
+            "columnName": "Bemerkung",
             "affinity": "TEXT",
             "notNull": false
           }
@@ -64,7 +64,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c79156d5770b17f388c8da59ff481d6a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'de0c4205be13613aac62ae0346991d6b')"
     ]
   }
 }

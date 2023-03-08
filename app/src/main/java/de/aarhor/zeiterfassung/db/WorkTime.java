@@ -40,6 +40,6 @@ default NULL);
     public Double MehrMinder_Stunden;
 
     @Nullable
-    @ColumnInfo(name = "comment")
+    @ColumnInfo(name = "Bemerkung")
     public String Bemerkung;
 }

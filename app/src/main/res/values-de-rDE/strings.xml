@@ -7,4 +7,6 @@
     <string name="NoEmptyStartTime">KEIN OFFENER DATENSATZ GEFUNDEN!</string>
     <string name="MenuItemListData">Alle Zeiten anzeigen</string>
     <string name="LabelComment">Bemerkung:</string>
+    <string name="checkBoxPause">Pause</string>
+    <string name="ButtonSelectDB">Datenbank auswählen</string>
 </resources>
